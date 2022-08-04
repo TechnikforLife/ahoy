@@ -50,10 +50,10 @@ l_string0_today = p_today.line(x='x', y='y', source=source_string0_today, legend
 l_string1_today = p_today.line(x='x', y='y', source=source_string1_today, legend_label="String 1", line_color="green")
 
 l_yesterday = p_yesterday.line(x='x', y='y', source=source_yesterday, legend_label="Total", line_color="blue")
-l_string0_yesterday = p_today.line(x='x', y='y', source=source_string0_yesterday, legend_label="String 0",
-                                   line_color="red")
-l_string1_yesterday = p_today.line(x='x', y='y', source=source_string1_yesterday, legend_label="String 1",
-                                   line_color="green")
+l_string0_yesterday = p_yesterday.line(x='x', y='y', source=source_string0_yesterday, legend_label="String 0",
+                                       line_color="red")
+l_string1_yesterday = p_yesterday.line(x='x', y='y', source=source_string1_yesterday, legend_label="String 1",
+                                       line_color="green")
 
 p_now.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
 p_today.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
