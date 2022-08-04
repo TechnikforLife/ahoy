@@ -158,7 +158,7 @@ class MyData(object):
                 bucket=influx_config.get('bucket', None),
                 measurement=influx_config.get('measurement', 'hoymiles'))
 
-        g_inverters = [g_inverter.get('serial') for g_inverter in ahoy_config.get('inverters', [])]
+        g_inverters = [g_inverter.get('serial') for g_inverter in my_hm.ahoy_config.get('inverters', [])]
         for g_inverter in my_hm.ahoy_config.get('inverters', []):
             g_inverter_ser = g_inverter.get('serial')
             my_hm.command_queue[str(g_inverter_ser)] = []
