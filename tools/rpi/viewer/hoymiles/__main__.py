@@ -198,7 +198,7 @@ def mqtt_on_command(client, userdata, message):
 
 def my_func():
     parser = argparse.ArgumentParser(description='Ahoy - Hoymiles solar inverter gateway', prog="hoymiles")
-    parser.add_argument("-c", "--config-file", nargs="?", required=True,
+    parser.add_argument("-c", "--config-file", nargs="?", default="ahoy.yml",
                         help="configuration file")
     parser.add_argument("--log-transactions", action="store_true", default=False,
                         help="Enable transaction logging output")
