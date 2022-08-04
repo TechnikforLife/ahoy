@@ -20,20 +20,20 @@ doc = curdoc()
 
 p_now = figure(title="Now",
                sizing_mode="stretch_both",
-               x_axis_label="x",
-               y_axis_label="y")
+               x_axis_label="Time",
+               y_axis_label="Power (W)")
 p_today = figure(title="Today",
                  sizing_mode="stretch_both",
-                 x_axis_label="x",
-                 y_axis_label="y")
+                 x_axis_label="Time",
+                 y_axis_label="Power (W)")
 p_yesterday = figure(title="Yesterday",
                      sizing_mode="stretch_both",
-                     x_axis_label="x",
-                     y_axis_label="y")
+                     x_axis_label="Time",
+                     y_axis_label="Power (W)")
 p_some_day = figure(title="Some day",
                     sizing_mode="stretch_both",
-                    x_axis_label="x",
-                    y_axis_label="y")
+                    x_axis_label="Time",
+                    y_axis_label="Power (W)")
 l_now = p_now.line(x='x', y='y', source=source_now)
 l_today = p_today.line(x='x', y='y', source=source_today)
 l_yesterday = p_yesterday.line(x='x', y='y', source=source_yesterday)
