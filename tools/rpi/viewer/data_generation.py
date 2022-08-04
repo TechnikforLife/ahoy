@@ -116,7 +116,7 @@ class MyData(object):
     def initialize_ahoy(self):
         # Load ahoy.yml config file
         config_file = "ahoy.yml"
-        log_transactions = True
+        log_transactions = False
         verbose = False
         try:
             if isinstance(config_file, str):
@@ -248,7 +248,7 @@ class MyData(object):
                         end='', file=self.output_file_full_log)
                     phase_id = phase_id + 1
             except KeyError:
-                print("No phases", end='', file=self.output_file_full_log)
+                print(" No phases", end='', file=self.output_file_full_log)
 
             string_id = 0
             try:
@@ -258,7 +258,7 @@ class MyData(object):
                         end='', file=self.output_file_full_log)
                     string_id = string_id + 1
             except KeyError:
-                print("No strings", end='', file=self.output_file_full_log)
+                print(" No strings", end='', file=self.output_file_full_log)
             print(file=self.output_file_full_log)
             self.output_file_full_log.flush()
 
