@@ -129,7 +129,7 @@ class MyData(object):
         self.output_file_name_full_log = ""
         self.output_file = None
         self.output_file_full_log = None
-        self.loop_interval = 5
+        self.loop_interval = 3
 
     def update_output_file(self):
         if not (self.output_file is None):
