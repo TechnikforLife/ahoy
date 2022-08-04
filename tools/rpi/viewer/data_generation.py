@@ -7,7 +7,15 @@ import numpy as np
 from bokeh.document import document
 from bokeh.models.sources import ColumnDataSource
 from functools import partial
+
+import yaml
+from yaml.loader import SafeLoader
+import sys
+import paho.mqtt.client
+
 from hoymiles import __main__ as my_hm
+import hoymiles
+
 
 
 def update(x, y, source, rollover_limit):
@@ -76,6 +84,7 @@ class MyData(object):
         self.output_file_extension = ".txt"
         self.output_file_name = ""
         self.output_file = None
+        self.loop_interval = 1
 
     def update_output_file(self):
         if not (self.output_file is None):
@@ -96,18 +105,90 @@ class MyData(object):
                                                              source=self.sources[i].yesterday))
         self.output_file = open(self.output_file_name, "a")
 
+    def initialize_ahoy(self):
+        # Load ahoy.yml config file
+        config_file = "ahoy.yml"
+        log_transactions = True
+        verbose=True
+        try:
+            if isinstance(config_file, str):
+                with open(config_file, 'r') as fh_yaml:
+                    cfg = yaml.load(fh_yaml, Loader=SafeLoader)
+            else:
+                with open('ahoy.yml', 'r') as fh_yaml:
+                    cfg = yaml.load(fh_yaml, Loader=SafeLoader)
+        except FileNotFoundError:
+            print("Could not load config file. Try --help")
+            sys.exit(2)
+        except yaml.YAMLError as e_yaml:
+            print('Failed to load config frile {config_file}: {e_yaml}')
+            sys.exit(1)
+
+        my_hm.ahoy_config = dict(cfg.get('ahoy', {}))
+
+        for radio_config in my_hm.ahoy_config.get('nrf', [{}]):
+            my_hm.hmradio = hoymiles.HoymilesNRF(**radio_config)
+
+        my_hm.mqtt_client = None
+
+        my_hm.command_queue = {}
+        my_hm.mqtt_command_topic_subs = []
+
+        if log_transactions:
+            hoymiles.HOYMILES_TRANSACTION_LOGGING = True
+        if verbose:
+            hoymiles.HOYMILES_DEBUG_LOGGING = True
+
+        mqtt_config = my_hm.ahoy_config.get('mqtt', [])
+        if not mqtt_config.get('disabled', False):
+            my_hm.mqtt_client = paho.mqtt.client.Client()
+            my_hm.mqtt_client.username_pw_set(mqtt_config.get('user', None), mqtt_config.get('password', None))
+            my_hm.mqtt_client.connect(mqtt_config.get('host', '127.0.0.1'), mqtt_config.get('port', 1883))
+            my_hm.mqtt_client.loop_start()
+            my_hm.mqtt_client.on_message = my_hm.mqtt_on_command
+
+        my_hm.influx_client = None
+        influx_config = my_hm.ahoy_config.get('influxdb', {})
+        if influx_config and not influx_config.get('disabled', False):
+            from hoymiles.outputs import InfluxOutputPlugin
+            my_hm.influx_client = InfluxOutputPlugin(
+                influx_config.get('url'),
+                influx_config.get('token'),
+                org=influx_config.get('org', ''),
+                bucket=influx_config.get('bucket', None),
+                measurement=influx_config.get('measurement', 'hoymiles'))
+
+        g_inverters = [g_inverter.get('serial') for g_inverter in ahoy_config.get('inverters', [])]
+        for g_inverter in my_hm.ahoy_config.get('inverters', []):
+            g_inverter_ser = g_inverter.get('serial')
+            my_hm.command_queue[str(g_inverter_ser)] = []
+
+            #
+            # Enables and subscribe inverter to mqtt /command-Topic
+            #
+            if my_hm.mqtt_client and g_inverter.get('mqtt', {}).get('send_raw_enabled', False):
+                topic_item = (
+                    str(g_inverter_ser),
+                    g_inverter.get('mqtt', {}).get('topic', f'hoymiles/{g_inverter_ser}') + '/command'
+                )
+                my_hm.mqtt_client.subscribe(topic_item[1])
+                my_hm.mqtt_command_topic_subs.append(topic_item)
+        self.loop_interval = my_hm.ahoy_config.get('interval', 1)
+
     def blocking_task(self):
         self.update_output_file()
-        my_hm.my_func()
+        self.initialize_ahoy()
         while True:
             if not threading.main_thread().is_alive():
                 self.output_file.close()
                 print("Exiting server child thread")
                 break
+            my_hm.main_loop()
+            print('', end='', flush=True)
 
             # do some blocking computation
             x = datetime.now()
-            y = psutil.cpu_percent(interval=2)
+            y = psutil.cpu_percent(interval=self.loop_interval)
 
             if x.date() != self.output_file_date:
                 self.output_file_date = x.date()
