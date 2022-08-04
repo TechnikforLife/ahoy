@@ -29,18 +29,24 @@ class MySources(object):
     now: ColumnDataSource
     today: ColumnDataSource
     yesterday: ColumnDataSource
-    some_day: ColumnDataSource
+    string0: ColumnDataSource
+    string1: ColumnDataSource
 
     def __init__(self, source_now: ColumnDataSource, source_today: ColumnDataSource, source_yesterday: ColumnDataSource,
-                 source_some_day: ColumnDataSource):
+                 source_string0: ColumnDataSource, source_string1: ColumnDataSource):
         self.now = source_now
         self.today = source_today
         self.yesterday = source_yesterday
-        self.some_day = source_some_day
+        self.string0 = source_string0
+        self.string1 = source_string1
 
     def sync_current_data(self, data_root: "MyData"):
         self.now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_now),
                         rollover=data_root.rollover_limit)
+        self.string0.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string0_now),
+                            rollover=data_root.rollover_limit)
+        self.string1.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string1_now),
+                            rollover=data_root.rollover_limit)
         full_update(data_root.x_data_today, data_root.y_data_today, self.today)
         full_update(data_root.x_data_yesterday, data_root.y_data_yesterday, self.yesterday)
 
@@ -65,11 +71,16 @@ class MyData(object):
     sources: list[MySources]
     documents: list[document]
 
-    def __init__(self, rollover_limit=20):
+    def __init__(self, rollover_limit=40):
         self.rollover_limit = rollover_limit
         temp_time = datetime.now()
         self.x_data_now = [temp_time for _ in range(self.rollover_limit)]
         self.y_data_now = np.zeros(self.rollover_limit)
+
+        self.y_data_string0_now = np.zeros(self.rollover_limit)
+
+        self.y_data_string1_now = np.zeros(self.rollover_limit)
+
         self.x_data_today = []
         self.y_data_today = np.array([])
         self.x_data_yesterday = []
@@ -86,7 +97,7 @@ class MyData(object):
         self.output_file_name_full_log = ""
         self.output_file = None
         self.output_file_full_log = None
-        self.loop_interval = 1
+        self.loop_interval = 5
 
     def update_output_file(self):
         if not (self.output_file is None):
@@ -198,9 +209,15 @@ class MyData(object):
             self.full_log(list_of_data, x)
             y = -1
             data_dict_0 = list_of_data[0]
+            y0 = -1
+            y1 = -1
             try:
                 phase_0 = data_dict_0['phases'][0]
                 y = phase_0["power"]
+                string_0 = data_dict_0['strings'][0]
+                y0 = string_0["power"]
+                string_1 = data_dict_0['strings'][1]
+                y1 = string_1["power"]
             except KeyError:
                 pass
 
@@ -219,6 +236,12 @@ class MyData(object):
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y,
                                                                  source=self.sources[i].now,
                                                                  rollover_limit=self.rollover_limit))
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0,
+                                                                 source=self.sources[i].string0,
+                                                                 rollover_limit=self.rollover_limit))
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1,
+                                                                 source=self.sources[i].string1,
+                                                                 rollover_limit=self.rollover_limit))
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y,
                                                                  source=self.sources[i].today,
                                                                  rollover_limit=None))
@@ -227,6 +250,8 @@ class MyData(object):
             self.x_data_now.pop(0)
             self.x_data_now.append(x)
             self.y_data_now = np.append(np.delete(self.y_data_now, 0), y)
+            self.y_data_string0_now = np.append(np.delete(self.y_data_string0_now, 0), y0)
+            self.y_data_string1_now = np.append(np.delete(self.y_data_string1_now, 0), y1)
 
             self.x_data_today.append(x)
             self.y_data_today = np.append(self.y_data_today, y)
