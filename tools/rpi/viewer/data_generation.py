@@ -129,7 +129,7 @@ class MyData(object):
         self.output_file_name_full_log = ""
         self.output_file = None
         self.output_file_full_log = None
-        self.loop_interval = 3
+        self.loop_interval = 5
 
     def update_output_file(self):
         if not (self.output_file is None):
@@ -316,10 +316,11 @@ class MyData(object):
             print(f"{x}\t{y}\t{y0}\t{y1}", file=self.output_file)
             self.output_file.flush()
             t_loop_end = time.time()
-            if self.loop_interval > 0 and (t_loop_end - t_loop_start) < self.loop_interval:
-                if (self.y_data_now < 0).sum() == self.rollover_limit:
-                    time.sleep(60*self.loop_interval - (t_loop_end - t_loop_start))
-                else:
+            if (self.y_data_now < 0).sum() == self.rollover_limit:
+                if self.loop_interval > 0:
+                    time.sleep(60 * self.loop_interval - (t_loop_end - t_loop_start))
+            else:
+                if self.loop_interval > 0 and (t_loop_end - t_loop_start) < self.loop_interval:
                     time.sleep(self.loop_interval - (t_loop_end - t_loop_start))
 
     def full_log(self, list_of_data: list[dict], c_datetime):
