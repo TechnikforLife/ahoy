@@ -1,4 +1,5 @@
 import copy
+import time
 from datetime import datetime, timedelta
 from dateutil import parser
 import threading
@@ -192,12 +193,13 @@ class MyData(object):
                 )
                 my_hm.mqtt_client.subscribe(topic_item[1])
                 my_hm.mqtt_command_topic_subs.append(topic_item)
-        self.loop_interval = my_hm.ahoy_config.get('interval', 1)
+        # self.loop_interval = my_hm.ahoy_config.get('interval', 1)
 
     def blocking_task(self):
         self.update_output_file()
         self.initialize_ahoy()
         while True:
+            t_loop_start = time.time()
             if not threading.main_thread().is_alive():
                 self.output_file.close()
                 self.output_file_full_log.close()
@@ -258,6 +260,9 @@ class MyData(object):
 
             print(f"{x}\t{y}", file=self.output_file)
             self.output_file.flush()
+            t_loop_end = time.time()
+            if self.loop_interval > 0 and (t_loop_end - t_loop_start) < self.loop_interval:
+                time.sleep(self.loop_interval - (t_loop_end - t_loop_start))
 
     def full_log(self, list_of_data: list[dict], c_datetime):
         for data_dict in list_of_data:
