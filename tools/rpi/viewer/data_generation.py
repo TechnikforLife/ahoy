@@ -7,7 +7,7 @@ import numpy as np
 from bokeh.document import document
 from bokeh.models.sources import ColumnDataSource
 from functools import partial
-import hoymiles
+from hoymiles import __main__ as my_hm
 
 
 def update(x, y, source, rollover_limit):
@@ -98,7 +98,7 @@ class MyData(object):
 
     def blocking_task(self):
         self.update_output_file()
-        hoymiles.my_func()
+        my_hm.my_func()
         while True:
             if not threading.main_thread().is_alive():
                 self.output_file.close()
