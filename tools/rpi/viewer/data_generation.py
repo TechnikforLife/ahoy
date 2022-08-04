@@ -29,24 +29,24 @@ class MySources(object):
     now: ColumnDataSource
     today: ColumnDataSource
     yesterday: ColumnDataSource
-    string0: ColumnDataSource
-    string1: ColumnDataSource
+    string0_now: ColumnDataSource
+    string1_now: ColumnDataSource
 
     def __init__(self, source_now: ColumnDataSource, source_today: ColumnDataSource, source_yesterday: ColumnDataSource,
-                 source_string0: ColumnDataSource, source_string1: ColumnDataSource):
+                 source_string0_now: ColumnDataSource, source_string1_now: ColumnDataSource):
         self.now = source_now
         self.today = source_today
         self.yesterday = source_yesterday
-        self.string0 = source_string0
-        self.string1 = source_string1
+        self.string0_now = source_string0_now
+        self.string1_now = source_string1_now
 
     def sync_current_data(self, data_root: "MyData"):
         self.now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_now),
                         rollover=data_root.rollover_limit)
-        self.string0.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string0_now),
-                            rollover=data_root.rollover_limit)
-        self.string1.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string1_now),
-                            rollover=data_root.rollover_limit)
+        self.string0_now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string0_now),
+                                rollover=data_root.rollover_limit)
+        self.string1_now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string1_now),
+                                rollover=data_root.rollover_limit)
         full_update(data_root.x_data_today, data_root.y_data_today, self.today)
         full_update(data_root.x_data_yesterday, data_root.y_data_yesterday, self.yesterday)
 
@@ -237,10 +237,10 @@ class MyData(object):
                                                                  source=self.sources[i].now,
                                                                  rollover_limit=self.rollover_limit))
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0,
-                                                                 source=self.sources[i].string0,
+                                                                 source=self.sources[i].string0_now,
                                                                  rollover_limit=self.rollover_limit))
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1,
-                                                                 source=self.sources[i].string1,
+                                                                 source=self.sources[i].string1_now,
                                                                  rollover_limit=self.rollover_limit))
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y,
                                                                  source=self.sources[i].today,
