@@ -38,8 +38,8 @@ p_strings = figure(title="Strings",
 l_now = p_now.line(x='x', y='y', source=source_now)
 l_today = p_today.line(x='x', y='y', source=source_today)
 l_yesterday = p_yesterday.line(x='x', y='y', source=source_yesterday)
-l_string0 = p_strings.line(x='x', y='y', source=source_string0, legend_label="String 0")
-l_string1 = p_strings.line(x='x', y='y', source=source_string1, legend_label="String 1")
+l_string0 = p_strings.line(x='x', y='y', source=source_string0, legend_label="String 0", line_color="red")
+l_string1 = p_strings.line(x='x', y='y', source=source_string1, legend_label="String 1", line_color="green")
 
 p_now.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
 p_today.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
