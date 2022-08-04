@@ -23,16 +23,19 @@ mqtt_command_topic_subs = []
 influx_client = None
 hmradio = None
 
+
 def main_loop():
     """Main loop"""
     inverters = [
         inverter for inverter in ahoy_config.get('inverters', [])
         if not inverter.get('disabled', False)]
 
+    list_of_data = []
     for inverter in inverters:
         if hoymiles.HOYMILES_DEBUG_LOGGING:
             print(f'Poll inverter {inverter["serial"]}')
-        poll_inverter(inverter)
+        list_of_data.append(poll_inverter(inverter))
+    return list_of_data
 
 
 def poll_inverter(inverter, retries=4):
@@ -48,7 +51,7 @@ def poll_inverter(inverter, retries=4):
 
     # Queue at least status data request
     command_queue[str(inverter_ser)].append(hoymiles.compose_set_time_payload())
-
+    data = dict()
     # Putt all queued commands for current inverter on air
     while len(command_queue[str(inverter_ser)]) > 0:
         payload = command_queue[str(inverter_ser)].pop(0)
@@ -111,6 +114,7 @@ def poll_inverter(inverter, retries=4):
                                      topic=inverter.get('mqtt', {}).get('topic', None))
                 if influx_client:
                     influx_client.store_status(result)
+    return data
 
 
 def mqtt_send_status(broker, inverter_ser, data, topic=None):

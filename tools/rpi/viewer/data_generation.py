@@ -17,7 +17,6 @@ from hoymiles import __main__ as my_hm
 import hoymiles
 
 
-
 def update(x, y, source, rollover_limit):
     source.stream(dict(x=[x], y=[y]), rollover=rollover_limit)
 
@@ -79,19 +78,27 @@ class MyData(object):
         self.sources = []
         self.documents_lock = threading.Lock()
 
-        self.output_file_base = "test"
+        self.output_file_base = "log"
+        self.output_file_base_full_log = "full_log"
         self.output_file_date = datetime.now().date()
         self.output_file_extension = ".txt"
         self.output_file_name = ""
+        self.output_file_name_full_log = ""
         self.output_file = None
+        self.output_file_full_log = None
         self.loop_interval = 1
 
     def update_output_file(self):
         if not (self.output_file is None):
             self.output_file.close()
+        if not (self.output_file_full_log is None):
+            self.output_file_full_log.close()
 
         # maybe use isoformat instead of str
         self.output_file_name = self.output_file_base + str(self.output_file_date) + self.output_file_extension
+        self.output_file_name_full_log = self.output_file_base_full_log \
+                                         + str(self.output_file_date) \
+                                         + self.output_file_extension
         self.x_data_today, self.y_data_today = load_day(self.output_file_name)
         yesterday_name = self.output_file_base \
                          + str(self.output_file_date - timedelta(days=1)) \
@@ -104,12 +111,13 @@ class MyData(object):
                                                              y=self.y_data_yesterday,
                                                              source=self.sources[i].yesterday))
         self.output_file = open(self.output_file_name, "a")
+        self.output_file_full_log = open(self.output_file_name_full_log, "a")
 
     def initialize_ahoy(self):
         # Load ahoy.yml config file
         config_file = "ahoy.yml"
         log_transactions = True
-        verbose=True
+        verbose = False
         try:
             if isinstance(config_file, str):
                 with open(config_file, 'r') as fh_yaml:
@@ -181,13 +189,18 @@ class MyData(object):
         while True:
             if not threading.main_thread().is_alive():
                 self.output_file.close()
+                self.output_file_full_log.close()
                 print("Exiting server child thread")
                 break
-            my_hm.main_loop()
+
+            x = datetime.now()
+            list_of_data = my_hm.main_loop()
+            self.full_log(list_of_data, x)
+
             print('', end='', flush=True)
 
             # do some blocking computation
-            x = datetime.now()
+
             y = psutil.cpu_percent(interval=self.loop_interval)
 
             if x.date() != self.output_file_date:
@@ -213,6 +226,41 @@ class MyData(object):
 
             print(f"{x}\t{y}", file=self.output_file)
             self.output_file.flush()
+
+    def full_log(self, list_of_data: list[dict], c_datetime):
+        for data_dict in list_of_data:
+            print(f'{c_datetime} Decoded: ', end='', file=self.output_file_full_log)
+            try:
+                print(f'temp={data_dict["temperature"]}', end='', file=self.output_file_full_log)
+            except KeyError:
+                print('temp=NAN', end='', file=self.output_file_full_log)
+            try:
+                if data_dict['powerfactor'] is not None:
+                    print(f', pf={data_dict["powerfactor"]}', end='', file=self.output_file_full_log)
+            except KeyError:
+                pass
+
+            phase_id = 0
+            try:
+                for phase in data_dict['phases']:
+                    print(
+                        f' phase{phase_id}=voltage:{phase["voltage"]}, current:{phase["current"]}, power:{phase["power"]}, frequency:{data_dict["frequency"]}',
+                        end='', file=self.output_file_full_log)
+                    phase_id = phase_id + 1
+            except KeyError:
+                print("No phases", end='', file=self.output_file_full_log)
+
+            string_id = 0
+            try:
+                for string in data_dict['strings']:
+                    print(
+                        f' string{string_id}=voltage:{string["voltage"]}, current:{string["current"]}, power:{string["power"]}, total:{string["energy_total"] / 1000}, daily:{string["energy_daily"]}',
+                        end='', file=self.output_file_full_log)
+                    string_id = string_id + 1
+            except KeyError:
+                print("No strings", end='', file=self.output_file_full_log)
+            print(file=self.output_file_full_log)
+            self.output_file_full_log.flush()
 
     def add_doc(self, doc: document, sources: MySources):
         self.documents_lock.acquire()
