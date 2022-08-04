@@ -249,6 +249,7 @@ class MyData(object):
                     phase_id = phase_id + 1
             except KeyError:
                 print(" No phases", end='', file=self.output_file_full_log)
+                print(f'{c_datetime}: No phases')
 
             string_id = 0
             try:
@@ -259,6 +260,7 @@ class MyData(object):
                     string_id = string_id + 1
             except KeyError:
                 print(" No strings", end='', file=self.output_file_full_log)
+                print(f'{c_datetime}: No strings')
             print(file=self.output_file_full_log)
             self.output_file_full_log.flush()
 
