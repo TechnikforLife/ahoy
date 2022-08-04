@@ -196,12 +196,19 @@ class MyData(object):
             x = datetime.now()
             list_of_data = my_hm.main_loop()
             self.full_log(list_of_data, x)
+            y = -1
+            data_dict_0 = list_of_data[0]
+            try:
+                phase_0 = data_dict_0['phases'][0]
+                y = phase_0["power"]
+            except KeyError:
+                pass
 
             print('', end='', flush=True)
 
             # do some blocking computation
 
-            y = psutil.cpu_percent(interval=self.loop_interval)
+            # y = psutil.cpu_percent(interval=self.loop_interval)
 
             if x.date() != self.output_file_date:
                 self.output_file_date = x.date()
