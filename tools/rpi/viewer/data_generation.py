@@ -142,11 +142,13 @@ class MyData(object):
         self.output_file_name_full_log = self.output_file_base_full_log \
                                          + str(self.output_file_date) \
                                          + self.output_file_extension
-        self.x_data_today, self.y_data_today, self.y_data_string0_today, self.y_data_string1_today = load_day(self.output_file_name)
+        self.x_data_today, self.y_data_today, self.y_data_string0_today, self.y_data_string1_today = load_day(
+            self.output_file_name)
         yesterday_name = self.output_file_base \
                          + str(self.output_file_date - timedelta(days=1)) \
                          + self.output_file_extension
-        self.x_data_yesterday, self.y_data_yesterday, self.y_data_string0_yesterday, self.y_data_string1_yesterday = load_day(yesterday_name)
+        self.x_data_yesterday, self.y_data_yesterday, self.y_data_string0_yesterday, self.y_data_string1_yesterday = load_day(
+            yesterday_name)
         for i in range(len(self.documents)):
             self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_today, y=self.y_data_today,
                                                              source=self.sources[i].today))
@@ -315,7 +317,10 @@ class MyData(object):
             self.output_file.flush()
             t_loop_end = time.time()
             if self.loop_interval > 0 and (t_loop_end - t_loop_start) < self.loop_interval:
-                time.sleep(self.loop_interval - (t_loop_end - t_loop_start))
+                if (self.y_data_now < 0).sum() == self.rollover_limit:
+                    time.sleep(60*self.loop_interval - (t_loop_end - t_loop_start))
+                else:
+                    time.sleep(self.loop_interval - (t_loop_end - t_loop_start))
 
     def full_log(self, list_of_data: list[dict], c_datetime):
         for data_dict in list_of_data:
