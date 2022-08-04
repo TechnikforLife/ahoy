@@ -30,16 +30,31 @@ class MySources(object):
     now: ColumnDataSource
     today: ColumnDataSource
     yesterday: ColumnDataSource
+
     string0_now: ColumnDataSource
+    string0_today: ColumnDataSource
+    string0_yesterday: ColumnDataSource
+
     string1_now: ColumnDataSource
+    string1_today: ColumnDataSource
+    string1_yesterday: ColumnDataSource
 
     def __init__(self, source_now: ColumnDataSource, source_today: ColumnDataSource, source_yesterday: ColumnDataSource,
-                 source_string0_now: ColumnDataSource, source_string1_now: ColumnDataSource):
+                 source_string0_now: ColumnDataSource, source_string0_today: ColumnDataSource,
+                 source_string0_yesterday: ColumnDataSource,
+                 source_string1_now: ColumnDataSource, source_string1_today: ColumnDataSource,
+                 source_string1_yesterday: ColumnDataSource):
         self.now = source_now
         self.today = source_today
         self.yesterday = source_yesterday
+
         self.string0_now = source_string0_now
+        self.string0_today = source_string0_today
+        self.string0_yesterday = source_string0_yesterday
+
         self.string1_now = source_string1_now
+        self.string1_today = source_string1_today
+        self.string1_yesterday = source_string1_yesterday
 
     def sync_current_data(self, data_root: "MyData"):
         self.now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_now),
@@ -48,24 +63,34 @@ class MySources(object):
                                 rollover=data_root.rollover_limit)
         self.string1_now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_string1_now),
                                 rollover=data_root.rollover_limit)
+
         full_update(data_root.x_data_today, data_root.y_data_today, self.today)
+        full_update(data_root.x_data_today, data_root.y_data_string0_today, self.string0_today)
+        full_update(data_root.x_data_today, data_root.y_data_string1_today, self.string1_today)
+
         full_update(data_root.x_data_yesterday, data_root.y_data_yesterday, self.yesterday)
+        full_update(data_root.x_data_yesterday, data_root.y_data_string0_yesterday, self.string0_yesterday)
+        full_update(data_root.x_data_yesterday, data_root.y_data_string1_yesterday, self.string1_yesterday)
 
 
 def load_day(filename):
     x_temp = []
     y_temp = []
+    y0_temp = []
+    y1_temp = []
     try:
         file_handler = open(filename, "r")
         for line in file_handler.readlines():
             temp = line.split("\t")
             x_temp.append(parser.parse(temp[0]))
             y_temp.append(float(temp[1]))
+            y0_temp.append(float(temp[2]))
+            y1_temp.append(float(temp[3]))
         file_handler.close()
     except FileNotFoundError:
         pass
 
-    return x_temp, np.array(y_temp)
+    return x_temp, np.array(y_temp), np.array(y0_temp), np.array(y1_temp)
 
 
 class MyData(object):
@@ -84,8 +109,14 @@ class MyData(object):
 
         self.x_data_today = []
         self.y_data_today = np.array([])
+        self.y_data_string0_today = np.array([])
+        self.y_data_string1_today = np.array([])
+
         self.x_data_yesterday = []
         self.y_data_yesterday = np.array([])
+        self.y_data_string0_yesterday = np.array([])
+        self.y_data_string1_yesterday = np.array([])
+
         self.documents = []
         self.sources = []
         self.documents_lock = threading.Lock()
@@ -111,17 +142,30 @@ class MyData(object):
         self.output_file_name_full_log = self.output_file_base_full_log \
                                          + str(self.output_file_date) \
                                          + self.output_file_extension
-        self.x_data_today, self.y_data_today = load_day(self.output_file_name)
+        self.x_data_today, self.y_data_today, self.y_data_string0_today, self.y_data_string1_today = load_day(self.output_file_name)
         yesterday_name = self.output_file_base \
                          + str(self.output_file_date - timedelta(days=1)) \
                          + self.output_file_extension
-        self.x_data_yesterday, self.y_data_yesterday = load_day(yesterday_name)
+        self.x_data_yesterday, self.y_data_yesterday, self.y_data_string0_yesterday, self.y_data_string1_yesterday = load_day(yesterday_name)
         for i in range(len(self.documents)):
             self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_today, y=self.y_data_today,
                                                              source=self.sources[i].today))
+            self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_today,
+                                                             y=self.y_data_string0_today,
+                                                             source=self.sources[i].string0_today))
+            self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_today,
+                                                             y=self.y_data_string1_today,
+                                                             source=self.sources[i].string1_today))
+
             self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_yesterday,
                                                              y=self.y_data_yesterday,
                                                              source=self.sources[i].yesterday))
+            self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_yesterday,
+                                                             y=self.y_data_string0_yesterday,
+                                                             source=self.sources[i].string0_yesterday))
+            self.documents[i].add_next_tick_callback(partial(full_update, x=self.x_data_yesterday,
+                                                             y=self.y_data_string1_yesterday,
+                                                             source=self.sources[i].string1_yesterday))
         self.output_file = open(self.output_file_name, "a")
         self.output_file_full_log = open(self.output_file_name_full_log, "a")
 
@@ -244,8 +288,15 @@ class MyData(object):
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1,
                                                                  source=self.sources[i].string1_now,
                                                                  rollover_limit=self.rollover_limit))
+
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y,
                                                                  source=self.sources[i].today,
+                                                                 rollover_limit=None))
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0,
+                                                                 source=self.sources[i].string0_today,
+                                                                 rollover_limit=None))
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1,
+                                                                 source=self.sources[i].string1_today,
                                                                  rollover_limit=None))
             self.documents_lock.release()
 
@@ -257,8 +308,10 @@ class MyData(object):
 
             self.x_data_today.append(x)
             self.y_data_today = np.append(self.y_data_today, y)
+            self.y_data_string0_today = np.append(self.y_data_string0_today, y0)
+            self.y_data_string1_today = np.append(self.y_data_string1_today, y1)
 
-            print(f"{x}\t{y}", file=self.output_file)
+            print(f"{x}\t{y}\t{y0}\t{y1}", file=self.output_file)
             self.output_file.flush()
             t_loop_end = time.time()
             if self.loop_interval > 0 and (t_loop_end - t_loop_start) < self.loop_interval:
