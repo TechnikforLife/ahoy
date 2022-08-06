@@ -39,11 +39,15 @@ class MySources(object):
     string1_today: ColumnDataSource
     string1_yesterday: ColumnDataSource
 
+    string0_percentage_today: ColumnDataSource
+    string1_percentage_today: ColumnDataSource
+
     def __init__(self, source_now: ColumnDataSource, source_today: ColumnDataSource, source_yesterday: ColumnDataSource,
                  source_string0_now: ColumnDataSource, source_string0_today: ColumnDataSource,
                  source_string0_yesterday: ColumnDataSource,
                  source_string1_now: ColumnDataSource, source_string1_today: ColumnDataSource,
-                 source_string1_yesterday: ColumnDataSource):
+                 source_string1_yesterday: ColumnDataSource,
+                 source_string0_percentage_today: ColumnDataSource, source_string1_percentage_today: ColumnDataSource):
         self.now = source_now
         self.today = source_today
         self.yesterday = source_yesterday
@@ -55,6 +59,9 @@ class MySources(object):
         self.string1_now = source_string1_now
         self.string1_today = source_string1_today
         self.string1_yesterday = source_string1_yesterday
+
+        self.string0_percentage_today = source_string0_percentage_today
+        self.string1_percentage_today = source_string1_percentage_today
 
     def sync_current_data(self, data_root: "MyData"):
         self.now.stream(dict(x=data_root.x_data_now, y=data_root.y_data_now),
@@ -71,6 +78,11 @@ class MySources(object):
         full_update(data_root.x_data_yesterday, data_root.y_data_yesterday, self.yesterday)
         full_update(data_root.x_data_yesterday, data_root.y_data_string0_yesterday, self.string0_yesterday)
         full_update(data_root.x_data_yesterday, data_root.y_data_string1_yesterday, self.string1_yesterday)
+
+        full_update(data_root.x_data_today, data_root.y_data_string0_today / data_root.y_data_today,
+                    self.string0_percentage_today)
+        full_update(data_root.x_data_today, data_root.y_data_string1_today / data_root.y_data_today,
+                    self.string1_percentage_today)
 
 
 def load_day(filename):
@@ -299,6 +311,13 @@ class MyData(object):
                                                                  rollover_limit=None))
                 self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1,
                                                                  source=self.sources[i].string1_today,
+                                                                 rollover_limit=None))
+
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0 / y,
+                                                                 source=self.sources[i].string0_percentage_today,
+                                                                 rollover_limit=None))
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1 / y,
+                                                                 source=self.sources[i].string1_percentage_today,
                                                                  rollover_limit=None))
             self.documents_lock.release()
 

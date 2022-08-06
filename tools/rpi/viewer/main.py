@@ -21,6 +21,9 @@ source_yesterday = ColumnDataSource(data=dict(x=[], y=[]))
 source_string0_yesterday = ColumnDataSource(data=dict(x=[], y=[]))
 source_string1_yesterday = ColumnDataSource(data=dict(x=[], y=[]))
 
+source_string0_percentage_today = ColumnDataSource(data=dict(x=[], y=[]))
+source_string1_percentage_today = ColumnDataSource(data=dict(x=[], y=[]))
+
 # This is important! Save curdoc() to make sure all threads
 # see the same document.
 doc = curdoc()
@@ -40,7 +43,7 @@ p_yesterday = figure(title="Yesterday",
 p_strings = figure(title="Strings",
                    sizing_mode="stretch_both",
                    x_axis_label="Time",
-                   y_axis_label="Power (W)")
+                   y_axis_label="%")
 l_now = p_now.line(x='x', y='y', source=source_now, legend_label="Total", line_color="blue")
 l_string0_now = p_now.line(x='x', y='y', source=source_string0_now, legend_label="String 0", line_color="red")
 l_string1_now = p_now.line(x='x', y='y', source=source_string1_now, legend_label="String 1", line_color="green")
@@ -55,6 +58,11 @@ l_string0_yesterday = p_yesterday.line(x='x', y='y', source=source_string0_yeste
 l_string1_yesterday = p_yesterday.line(x='x', y='y', source=source_string1_yesterday, legend_label="String 1",
                                        line_color="green")
 
+l_string0_percentage_today = p_strings.line(x='x', y='y', source=source_string0_percentage_today,
+                                            legend_label="String 0", line_color="red")
+l_string1_percentage_today = p_strings.line(x='x', y='y', source=source_string1_percentage_today,
+                                            legend_label="String 1", line_color="green")
+
 p_now.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
 p_today.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
 p_yesterday.xaxis[0].formatter = DatetimeTickFormatter(hourmin=['%H:%M'], seconds=['%Ss'])
@@ -68,5 +76,7 @@ data_generation.the_data.add_doc(doc,
                                  data_generation.MySources(source_now, source_today, source_yesterday,
                                                            source_string0_now, source_string0_today,
                                                            source_string0_yesterday, source_string1_now,
-                                                           source_string1_today, source_string1_yesterday))
+                                                           source_string1_today, source_string1_yesterday,
+                                                           source_string0_percentage_today,
+                                                           source_string1_percentage_today))
 # doc.add_periodic_callback(internal_task, 2000)
