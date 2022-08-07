@@ -79,9 +79,11 @@ class MySources(object):
         full_update(data_root.x_data_yesterday, data_root.y_data_string0_yesterday, self.string0_yesterday)
         full_update(data_root.x_data_yesterday, data_root.y_data_string1_yesterday, self.string1_yesterday)
 
-        full_update(data_root.x_data_today, data_root.y_data_string0_today / data_root.y_data_today,
+        full_update(data_root.x_data_today,
+                    data_root.y_data_string0_today / (data_root.y_data_today + (data_root.y_data_today == 0)),
                     self.string0_percentage_today)
-        full_update(data_root.x_data_today, data_root.y_data_string1_today / data_root.y_data_today,
+        full_update(data_root.x_data_today,
+                    data_root.y_data_string1_today / (data_root.y_data_today + (data_root.y_data_today == 0)),
                     self.string1_percentage_today)
 
 
@@ -313,10 +315,10 @@ class MyData(object):
                                                                  source=self.sources[i].string1_today,
                                                                  rollover_limit=None))
 
-                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0 / y,
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y0 / (y + (y == 0)),
                                                                  source=self.sources[i].string0_percentage_today,
                                                                  rollover_limit=None))
-                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1 / y,
+                self.documents[i].add_next_tick_callback(partial(update, x=x, y=y1 / (y + (y == 0)),
                                                                  source=self.sources[i].string1_percentage_today,
                                                                  rollover_limit=None))
             self.documents_lock.release()
